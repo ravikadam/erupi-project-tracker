@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { taskApi, activityApi } from "@/lib/api";
 import TaskList from "./TaskList";
 import ChatInterface from "./ChatInterface";
 import ActivityLog from "./ActivityLog";
@@ -23,8 +25,38 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ currentPage }: DashboardProps) {
-  // todo: remove mock functionality - this would come from actual API calls
-  const [tasks] = useState<Task[]>([
+  // Fetch real data from API
+  const { data: tasks = [], isLoading: tasksLoading, error: tasksError } = useQuery({
+    queryKey: ["/api/tasks"],
+    queryFn: () => taskApi.getAllTasks(),
+  });
+
+  const { data: allActivities = [] } = useQuery({
+    queryKey: ["/api/activities"],
+    queryFn: async () => {
+      const activities = [];
+      for (const task of tasks) {
+        const taskActivities = await activityApi.getTaskActivities(task.id);
+        activities.push(...taskActivities);
+      }
+      return activities.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    },
+    enabled: tasks.length > 0,
+  });
+
+  const queryClient = useQueryClient();
+
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Task> }) => 
+      taskApi.updateTask(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/activities"] });
+    },
+  });
+
+  // Mock tasks for fallback display
+  const mockTasks: Task[] = [
     {
       id: "task-1",
       title: "Finalize two Malls and communicate with Malls",
@@ -85,9 +117,9 @@ export default function Dashboard({ currentPage }: DashboardProps) {
       createdAt: new Date("2024-01-01"),
       updatedAt: new Date("2024-01-01"),
     }
-  ]);
+  ];
 
-  const [activities] = useState<Activity[]>([
+  const activities = allActivities.length > 0 ? allActivities : [
     {
       id: "activity-1",
       taskId: "task-1",
@@ -115,13 +147,27 @@ export default function Dashboard({ currentPage }: DashboardProps) {
       userId: "banking-team",
       createdAt: new Date("2024-01-08T16:45:00Z"),
     }
-  ]);
+  ];
+
+  const handleUpdateTask = (taskId: string, updates: Partial<Task>) => {
+    updateTaskMutation.mutate({ id: taskId, updates });
+  };
+
+  const handleViewTaskDetails = (taskId: string) => {
+    console.log(`Viewing details for task: ${taskId}`);
+  };
+
+  if (tasksError) {
+    console.error("Error loading tasks:", tasksError);
+  }
+
+  const displayTasks = tasks.length > 0 ? tasks : mockTasks;
 
   const stats = {
-    total: tasks.length,
-    completed: tasks.filter(t => t.status === "completed").length,
-    inProgress: tasks.filter(t => t.status === "in_progress").length,
-    overdue: tasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== "completed").length,
+    total: displayTasks.length,
+    completed: displayTasks.filter(t => t.status === "completed").length,
+    inProgress: displayTasks.filter(t => t.status === "in_progress").length,
+    overdue: displayTasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== "completed").length,
   };
 
   const renderOverview = () => (
@@ -193,7 +239,7 @@ export default function Dashboard({ currentPage }: DashboardProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {tasks.slice(0, 3).map((task) => (
+                {displayTasks.slice(0, 3).map((task) => (
                   <div key={task.id} className="flex items-center gap-4 p-3 border rounded-lg">
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{task.title}</p>
@@ -223,13 +269,9 @@ export default function Dashboard({ currentPage }: DashboardProps) {
 
   const renderTasks = () => (
     <TaskList 
-      tasks={tasks}
-      onUpdateTask={(taskId, updates) => {
-        console.log(`Updating task ${taskId}:`, updates);
-      }}
-      onViewTaskDetails={(taskId) => {
-        console.log(`Viewing details for task: ${taskId}`);
-      }}
+      tasks={displayTasks}
+      onUpdateTask={handleUpdateTask}
+      onViewTaskDetails={handleViewTaskDetails}
     />
   );
 

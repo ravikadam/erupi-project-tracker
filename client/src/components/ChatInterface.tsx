@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { chatApi } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +12,8 @@ interface ChatMessage {
   id: string;
   content: string;
   role: "user" | "assistant";
-  timestamp: Date;
+  timestamp?: Date;
+  createdAt?: Date | null;
   taskId?: string;
 }
 
@@ -22,14 +25,60 @@ interface ChatInterfaceProps {
 
 export default function ChatInterface({ onSendMessage, isLoading = false, className }: ChatInterfaceProps) {
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "1",
-      content: "Hello! I'm your AI assistant for the eRupi Pilot Program. I can help you create, update, complete, or remove tasks. I can also add remarks and track activities. What would you like to do?",
-      role: "assistant",
-      timestamp: new Date(),
+  // Fetch chat messages from API
+  const { data: chatMessages = [] } = useQuery({
+    queryKey: ["/api/chat/messages"],
+    queryFn: () => chatApi.getMessages(50),
+  });
+
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  
+  // Update local messages when API data changes
+  useEffect(() => {
+    if (chatMessages.length === 0) {
+      setMessages([
+        {
+          id: "welcome",
+          content: "Hello! I'm your AI assistant for the eRupi Pilot Program. I can help you create, update, complete, or remove tasks. I can also add remarks and track activities. What would you like to do?",
+          role: "assistant",
+          createdAt: new Date(),
+        } as ChatMessage
+      ]);
+    } else {
+      setMessages(chatMessages.map(msg => ({
+        ...msg,
+        timestamp: msg.createdAt
+      })) as any);
     }
-  ]);
+  }, [chatMessages]);
+
+  const queryClient = useQueryClient();
+
+  const sendMessageMutation = useMutation({
+    mutationFn: (content: string) => chatApi.sendMessage(content),
+    onSuccess: (response) => {
+      // Update messages with both user and AI response
+      setMessages(prev => [
+        ...prev.filter(m => m.id !== "temp-user"),
+        {
+          ...response.userMessage,
+          timestamp: response.userMessage.createdAt
+        } as any,
+        {
+          ...response.aiMessage,
+          timestamp: response.aiMessage.createdAt
+        } as any
+      ]);
+      
+      // Invalidate queries to refresh task data
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/messages"] });
+    },
+    onError: (error) => {
+      console.error("Failed to send message:", error);
+      setMessages(prev => prev.filter(m => m.id !== "temp-user"));
+    },
+  });
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -41,29 +90,24 @@ export default function ChatInterface({ onSendMessage, isLoading = false, classN
   }, [messages]);
 
   const handleSend = () => {
-    if (!message.trim() || isLoading) return;
+    if (!message.trim() || sendMessageMutation.isPending) return;
 
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      content: message.trim(),
-      role: "user",
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
+    const userContent = message.trim();
     
-    // Simulate AI response for demo
-    setTimeout(() => {
-      const aiResponse: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        content: `I understand you want to: "${message.trim()}". Let me process that for you. I can help you with task management for the eRupi Pilot Program.`,
-        role: "assistant",
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, aiResponse]);
-    }, 1000);
-
-    onSendMessage?.(message.trim());
+    // Add temporary user message for immediate feedback
+    const tempUserMessage: ChatMessage = {
+      id: "temp-user",
+      content: userContent,
+      role: "user",
+      createdAt: new Date(),
+    };
+    
+    setMessages(prev => [...prev, tempUserMessage as any]);
+    
+    // Send message to AI
+    sendMessageMutation.mutate(userContent);
+    
+    onSendMessage?.(userContent);
     setMessage("");
   };
 
@@ -120,7 +164,7 @@ export default function ChatInterface({ onSendMessage, isLoading = false, classN
               </div>
             ))}
             
-            {isLoading && (
+            {sendMessageMutation.isPending && (
               <div className="flex gap-3 justify-start">
                 <div className="flex gap-2 max-w-[80%]">
                   <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
@@ -146,12 +190,12 @@ export default function ChatInterface({ onSendMessage, isLoading = false, classN
             onKeyPress={handleKeyPress}
             placeholder="Ask me to create, update, or manage tasks..."
             className="flex-1 min-h-[44px] max-h-32 resize-none"
-            disabled={isLoading}
+            disabled={sendMessageMutation.isPending}
             data-testid="input-chat-message"
           />
           <Button
             onClick={handleSend}
-            disabled={!message.trim() || isLoading}
+            disabled={!message.trim() || sendMessageMutation.isPending}
             size="icon"
             data-testid="button-send-message"
           >

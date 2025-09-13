@@ -267,7 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } catch (opError) {
         console.error("Task operation failed:", opError);
-        operationResult = { success: false, error: opError.message };
+        operationResult = { success: false, error: opError instanceof Error ? opError.message : "Unknown error" };
       }
 
       // Generate AI response

@@ -12,6 +12,7 @@ interface TaskListProps {
   onUpdateTask?: (taskId: string, updates: Partial<Task>) => void;
   onViewTaskDetails?: (taskId: string) => void;
   className?: string;
+  isLoading?: boolean;
 }
 
 export default function TaskList({ tasks, onUpdateTask, onViewTaskDetails, className }: TaskListProps) {
