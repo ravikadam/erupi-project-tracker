@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Send, Bot, User, Loader2 } from "lucide-react";
 
 interface ChatMessage {
@@ -25,6 +26,8 @@ interface ChatInterfaceProps {
 
 export default function ChatInterface({ onSendMessage, isLoading = false, className }: ChatInterfaceProps) {
   const [message, setMessage] = useState("");
+  const isMobile = useIsMobile();
+  
   // Fetch chat messages from API
   const { data: chatMessages = [] } = useQuery({
     queryKey: ["/api/chat/messages"],
@@ -119,32 +122,32 @@ export default function ChatInterface({ onSendMessage, isLoading = false, classN
   };
 
   return (
-    <Card className={`flex flex-col h-full ${className || ""}`} data-testid="chat-interface">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2">
-          <Bot className="h-5 w-5 text-primary" />
-          AI Task Assistant
-          <Badge variant="secondary" className="ml-auto">
+    <Card className={`flex flex-col ${isMobile ? 'h-[500px]' : 'h-full'} ${className || ""}`} data-testid="chat-interface">
+      <CardHeader className="pb-2 md:pb-3">
+        <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+          <Bot className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+          <span className="flex-1">AI Task Assistant</span>
+          <Badge variant="secondary" className="text-xs">
             GPT-5 Powered
           </Badge>
         </CardTitle>
       </CardHeader>
       
-      <CardContent className="flex flex-col flex-1 gap-4 p-4">
-        <ScrollArea className="flex-1 pr-4" ref={scrollAreaRef}>
-          <div className="space-y-4">
+      <CardContent className="flex flex-col flex-1 gap-3 md:gap-4 p-3 md:p-4">
+        <ScrollArea className="flex-1 pr-2 md:pr-4" ref={scrollAreaRef}>
+          <div className="space-y-3 md:space-y-4">
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex gap-2 md:gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 data-testid={`message-${msg.role}-${msg.id}`}
               >
-                <div className={`flex gap-2 max-w-[80%] ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                <div className={`flex gap-2 ${isMobile ? 'max-w-[85%]' : 'max-w-[80%]'} ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                  <div className="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full bg-muted flex items-center justify-center">
                     {msg.role === "user" ? (
-                      <User className="h-4 w-4" />
+                      <User className="h-3 w-3 md:h-4 md:w-4" />
                     ) : (
-                      <Bot className="h-4 w-4 text-primary" />
+                      <Bot className="h-3 w-3 md:h-4 md:w-4 text-primary" />
                     )}
                   </div>
                   
@@ -155,9 +158,9 @@ export default function ChatInterface({ onSendMessage, isLoading = false, classN
                         : "bg-muted"
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    <p className="text-xs md:text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                     <p className="text-xs opacity-70 mt-1">
-                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {(msg.timestamp || msg.createdAt || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
                 </div>
@@ -165,15 +168,15 @@ export default function ChatInterface({ onSendMessage, isLoading = false, classN
             ))}
             
             {sendMessageMutation.isPending && (
-              <div className="flex gap-3 justify-start">
+              <div className="flex gap-2 md:gap-3 justify-start">
                 <div className="flex gap-2 max-w-[80%]">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                    <Bot className="h-4 w-4 text-primary" />
+                  <div className="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full bg-muted flex items-center justify-center">
+                    <Bot className="h-3 w-3 md:h-4 md:w-4 text-primary" />
                   </div>
                   <div className="rounded-lg px-3 py-2 bg-muted">
                     <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-sm">Thinking...</span>
+                      <Loader2 className="h-3 w-3 md:h-4 md:w-4 animate-spin" />
+                      <span className="text-xs md:text-sm">Thinking...</span>
                     </div>
                   </div>
                 </div>
@@ -182,14 +185,15 @@ export default function ChatInterface({ onSendMessage, isLoading = false, classN
           </div>
         </ScrollArea>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-end">
           <Textarea
             ref={textareaRef}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Ask me to create, update, or manage tasks..."
-            className="flex-1 min-h-[44px] max-h-32 resize-none"
+            placeholder={isMobile ? "Ask me about tasks..." : "Ask me to create, update, or manage tasks..."}
+            className="flex-1 min-h-[44px] max-h-32 resize-none text-sm md:text-base"
+            rows={isMobile ? 2 : 1}
             disabled={sendMessageMutation.isPending}
             data-testid="input-chat-message"
           />
@@ -197,6 +201,7 @@ export default function ChatInterface({ onSendMessage, isLoading = false, classN
             onClick={handleSend}
             disabled={!message.trim() || sendMessageMutation.isPending}
             size="icon"
+            className="self-end w-11 h-11 md:w-10 md:h-10 shrink-0"
             data-testid="button-send-message"
           >
             <Send className="h-4 w-4" />
@@ -204,7 +209,7 @@ export default function ChatInterface({ onSendMessage, isLoading = false, classN
         </div>
 
         <div className="text-xs text-muted-foreground">
-          Try: "Create a new task for mall partnership" or "Update task 1 status to completed"
+          {isMobile ? "Try: 'Create new task' or 'Update status'" : "Try: 'Create a new task for mall partnership' or 'Update task 1 status to completed'"}
         </div>
       </CardContent>
     </Card>

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { 
   LayoutDashboard, 
   CheckSquare, 
@@ -30,6 +31,8 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ currentPage = "dashboard", onPageChange }: AppSidebarProps) {
+  const isMobile = useIsMobile();
+  
   // todo: remove mock functionality
   const progressData = {
     completed: 3,
@@ -96,14 +99,14 @@ export function AppSidebar({ currentPage = "dashboard", onPageChange }: AppSideb
 
   return (
     <Sidebar data-testid="app-sidebar">
-      <SidebarHeader className="p-4">
+      <SidebarHeader className="p-3 md:p-4">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded bg-primary flex items-center justify-center">
-            <FileText className="h-4 w-4 text-primary-foreground" />
+          <div className="h-10 w-10 md:h-8 md:w-8 rounded bg-primary flex items-center justify-center">
+            <FileText className="h-5 w-5 md:h-4 md:w-4 text-primary-foreground" />
           </div>
-          <div>
-            <h2 className="font-semibold text-sidebar-foreground">eRupi Tracker</h2>
-            <p className="text-xs text-sidebar-foreground/70">Pilot Program</p>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-semibold text-sidebar-foreground text-sm md:text-base truncate">eRupi Tracker</h2>
+            <p className="text-xs text-sidebar-foreground/70 truncate">Pilot Program</p>
           </div>
         </div>
       </SidebarHeader>
@@ -122,12 +125,12 @@ export function AppSidebar({ currentPage = "dashboard", onPageChange }: AppSideb
                   >
                     <button
                       onClick={() => onPageChange?.(item.id)}
-                      className="flex items-center gap-2 w-full"
+                      className="flex items-center gap-3 w-full min-h-[44px] px-3 py-2 rounded-md transition-colors"
                     >
-                      <item.icon className="h-4 w-4" />
-                      <span className="flex-1 text-left">{item.title}</span>
+                      <item.icon className="h-5 w-5 shrink-0" />
+                      <span className="flex-1 text-left text-sm md:text-base">{item.title}</span>
                       {item.badge && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-xs shrink-0">
                           {item.badge}
                         </Badge>
                       )}
@@ -140,23 +143,23 @@ export function AppSidebar({ currentPage = "dashboard", onPageChange }: AppSideb
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Project Progress</SidebarGroupLabel>
-          <SidebarGroupContent className="px-2">
-            <div className="space-y-3">
+          <SidebarGroupLabel className="text-xs md:text-sm">Project Progress</SidebarGroupLabel>
+          <SidebarGroupContent className="px-2 md:px-3">
+            <div className="space-y-3 md:space-y-4">
               <div>
-                <div className="flex items-center justify-between text-sm mb-1">
+                <div className="flex items-center justify-between text-xs md:text-sm mb-2">
                   <span className="text-sidebar-foreground">Overall Progress</span>
                   <span className="text-sidebar-foreground/70">{completionPercentage}%</span>
                 </div>
-                <Progress value={completionPercentage} className="h-2" />
+                <Progress value={completionPercentage} className="h-2 md:h-3" />
               </div>
               
-              <div className="space-y-2">
+              <div className="space-y-2 md:space-y-3">
                 {quickStats.map((stat) => (
-                  <div key={stat.label} className="flex items-center gap-2 text-sm">
-                    <stat.icon className={`h-3 w-3 ${stat.color}`} />
-                    <span className="flex-1 text-sidebar-foreground/70">{stat.label}</span>
-                    <span className={`font-medium ${stat.color}`}>{stat.value}</span>
+                  <div key={stat.label} className="flex items-center gap-2 text-xs md:text-sm min-h-[36px] p-2 rounded hover-elevate">
+                    <stat.icon className={`h-4 w-4 shrink-0 ${stat.color}`} />
+                    <span className="flex-1 text-sidebar-foreground/70 truncate">{stat.label}</span>
+                    <span className={`font-medium ${stat.color} shrink-0`}>{stat.value}</span>
                   </div>
                 ))}
               </div>
@@ -165,9 +168,9 @@ export function AppSidebar({ currentPage = "dashboard", onPageChange }: AppSideb
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-3 md:p-4">
         <div className="text-xs text-sidebar-foreground/50 text-center">
-          Last updated: {new Date().toLocaleDateString()}
+          {isMobile ? "Updated today" : `Last updated: ${new Date().toLocaleDateString()}`}
         </div>
       </SidebarFooter>
     </Sidebar>

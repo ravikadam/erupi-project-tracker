@@ -10,14 +10,17 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { AppSidebar } from "@/components/AppSidebar";
 import Dashboard from "@/components/Dashboard";
 import NotFound from "@/pages/not-found";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 function MainApp() {
   const [currentPage, setCurrentPage] = useState("dashboard");
+  const isMobile = useIsMobile();
 
-  // Custom sidebar width for better content layout
+  // Responsive sidebar width based on screen size
   const style = {
-    "--sidebar-width": "20rem",       // 320px for better navigation
-    "--sidebar-width-icon": "4rem",   // default icon width
+    "--sidebar-width": isMobile ? "16rem" : "20rem",       // Narrower on mobile
+    "--sidebar-width-icon": "3rem",   // Consistent icon width
+    "--sidebar-width-mobile": "16rem", // Mobile drawer width
   };
 
   return (
@@ -29,18 +32,18 @@ function MainApp() {
         />
         
         <div className="flex flex-col flex-1 overflow-hidden">
-          <header className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger data-testid="button-sidebar-toggle" />
-              <div>
-                <h1 className="text-xl font-semibold">eRupi Pilot Program Tracker</h1>
-                <p className="text-sm text-muted-foreground">
+          <header className="flex items-center justify-between p-3 md:p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 min-h-[60px]">
+            <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
+              <SidebarTrigger data-testid="button-sidebar-toggle" className="shrink-0" />
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg md:text-xl font-semibold truncate">eRupi Pilot Program Tracker</h1>
+                <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">
                   AI-powered project management with intelligent task assistance
                 </p>
               </div>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <ThemeToggle />
             </div>
           </header>

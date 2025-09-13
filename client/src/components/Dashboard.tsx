@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { 
   FileText, 
   Users, 
@@ -25,6 +26,8 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ currentPage }: DashboardProps) {
+  const isMobile = useIsMobile();
+  
   // Fetch real data from API
   const { data: tasks = [], isLoading: tasksLoading, error: tasksError } = useQuery({
     queryKey: ["/api/tasks"],
@@ -171,56 +174,56 @@ export default function Dashboard({ currentPage }: DashboardProps) {
   };
 
   const renderOverview = () => (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Key Metrics */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+      <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
+        <Card className="hover-elevate">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium">Total Tasks</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-xl md:text-2xl font-bold">{stats.total}</div>
+            <p className="text-xs text-muted-foreground hidden sm:block">
               eRupi Pilot Program
             </p>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="hover-elevate">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium">Completed</CardTitle>
             <CheckSquare className="h-4 w-4 text-chart-2" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-chart-2">{stats.completed}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-xl md:text-2xl font-bold text-chart-2">{stats.completed}</div>
+            <p className="text-xs text-muted-foreground hidden sm:block">
               +{stats.completed} this week
             </p>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="hover-elevate">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium">In Progress</CardTitle>
             <Clock className="h-4 w-4 text-chart-3" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-chart-3">{stats.inProgress}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-xl md:text-2xl font-bold text-chart-3">{stats.inProgress}</div>
+            <p className="text-xs text-muted-foreground hidden sm:block">
               Active tasks
             </p>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="hover-elevate">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overdue</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium">Overdue</CardTitle>
             <AlertTriangle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">{stats.overdue}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-xl md:text-2xl font-bold text-destructive">{stats.overdue}</div>
+            <p className="text-xs text-muted-foreground hidden sm:block">
               Requires attention
             </p>
           </CardContent>
@@ -228,39 +231,42 @@ export default function Dashboard({ currentPage }: DashboardProps) {
       </div>
 
       {/* Main Content Area */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Recent Tasks</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg md:text-xl">Recent Tasks</CardTitle>
+              <CardDescription className="text-sm">
                 Latest updates from the eRupi Pilot Program
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {displayTasks.slice(0, 3).map((task) => (
-                  <div key={task.id} className="flex items-center gap-4 p-3 border rounded-lg">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{task.title}</p>
-                      <p className="text-sm text-muted-foreground truncate">
+              <div className="space-y-3 md:space-y-4">
+                {displayTasks.slice(0, isMobile ? 3 : 4).map((task) => (
+                  <div key={task.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-3 md:p-4 border rounded-lg hover-elevate">
+                    <div className="flex-1 min-w-0 w-full">
+                      <p className="font-medium text-sm md:text-base">{task.title}</p>
+                      <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 mt-1">
                         {task.description}
                       </p>
                     </div>
-                    <Badge variant={task.status === "completed" ? "default" : "secondary"}>
+                    <Badge 
+                      variant={task.status === "completed" ? "default" : "secondary"}
+                      className="text-xs w-full sm:w-auto justify-center"
+                    >
                       {task.status.replace('_', ' ').toUpperCase()}
                     </Badge>
                   </div>
                 ))}
               </div>
-              <Button variant="outline" className="w-full mt-4">
+              <Button variant="outline" className="w-full mt-4 min-h-[44px]">
                 View All Tasks
               </Button>
             </CardContent>
           </Card>
         </div>
         
-        <div>
+        <div className="hidden lg:block">
           <ActivityLog activities={activities.slice(0, 5)} />
         </div>
       </div>
@@ -277,14 +283,14 @@ export default function Dashboard({ currentPage }: DashboardProps) {
 
   const renderChat = () => (
     <div className="max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold">AI Task Assistant</h2>
-        <p className="text-muted-foreground">
+      <div className="mb-4 md:mb-6">
+        <h2 className="text-xl md:text-2xl font-bold">AI Task Assistant</h2>
+        <p className="text-sm md:text-base text-muted-foreground">
           Ask me to create, update, complete, or manage your eRupi Pilot Program tasks
         </p>
       </div>
       
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <ChatInterface 
             onSendMessage={(message) => {
@@ -293,25 +299,25 @@ export default function Dashboard({ currentPage }: DashboardProps) {
           />
         </div>
         
-        <div>
+        <div className="order-first lg:order-last">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Quick Actions</CardTitle>
+              <CardTitle className="text-base md:text-lg">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="outline" size="sm" className="w-full justify-start">
+              <Button variant="outline" size="sm" className="w-full justify-start min-h-[44px]">
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Create new task
               </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start">
+              <Button variant="outline" size="sm" className="w-full justify-start min-h-[44px]">
                 <CheckSquare className="h-4 w-4 mr-2" />
                 Update task status
               </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start">
+              <Button variant="outline" size="sm" className="w-full justify-start min-h-[44px]">
                 <FileText className="h-4 w-4 mr-2" />
                 Add task remarks
               </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start">
+              <Button variant="outline" size="sm" className="w-full justify-start min-h-[44px]">
                 <TrendingUp className="h-4 w-4 mr-2" />
                 View progress report
               </Button>
@@ -352,7 +358,7 @@ export default function Dashboard({ currentPage }: DashboardProps) {
   };
 
   return (
-    <div className="flex-1 p-6" data-testid="dashboard-content">
+    <div className="flex-1 p-3 md:p-4 lg:p-6" data-testid="dashboard-content">
       {getPageContent()}
     </div>
   );

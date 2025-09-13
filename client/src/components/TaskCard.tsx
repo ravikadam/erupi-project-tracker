@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import StatusBadge from "./StatusBadge";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Calendar, User, MessageSquare } from "lucide-react";
 import type { Task } from "@shared/schema";
 
@@ -13,12 +14,14 @@ interface TaskCardProps {
 }
 
 export default function TaskCard({ task, onUpdateStatus, onViewDetails, activityCount = 0 }: TaskCardProps) {
+  const isMobile = useIsMobile();
+  
   const formatDate = (date: Date | null) => {
     if (!date) return "No due date";
     return new Intl.DateTimeFormat('en-US', { 
       month: 'short', 
       day: 'numeric', 
-      year: 'numeric' 
+      year: isMobile ? undefined : 'numeric' 
     }).format(new Date(date));
   };
 
@@ -34,20 +37,22 @@ export default function TaskCard({ task, onUpdateStatus, onViewDetails, activity
 
   return (
     <Card className="hover-elevate" data-testid={`task-card-${task.id}`}>
-      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0 pb-3">
-        <div className="flex-1 min-w-0">
-          <CardTitle className="text-lg truncate">{task.title}</CardTitle>
-          {task.description && (
-            <CardDescription className="text-sm mt-1 line-clamp-2">
-              {task.description}
-            </CardDescription>
-          )}
+      <CardHeader className="flex flex-col gap-3 pb-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-base md:text-lg">{task.title}</CardTitle>
+          </div>
+          <StatusBadge status={task.status as any} />
         </div>
-        <StatusBadge status={task.status as any} />
+        {task.description && (
+          <CardDescription className="text-sm line-clamp-2">
+            {task.description}
+          </CardDescription>
+        )}
       </CardHeader>
       
-      <CardContent className="space-y-4">
-        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+      <CardContent className="space-y-3 md:space-y-4">
+        <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground">
           {task.priority && (
             <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>
               {task.priority.toUpperCase()}
@@ -57,14 +62,14 @@ export default function TaskCard({ task, onUpdateStatus, onViewDetails, activity
           {task.dueDate && (
             <div className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
-              <span>{formatDate(task.dueDate)}</span>
+              <span className="truncate">{formatDate(task.dueDate)}</span>
             </div>
           )}
           
           {task.assignedTo && (
             <div className="flex items-center gap-1">
               <User className="h-3 w-3" />
-              <span>{task.assignedTo}</span>
+              <span className="truncate">{isMobile ? task.assignedTo.split(' ')[0] : task.assignedTo}</span>
             </div>
           )}
           
@@ -76,12 +81,13 @@ export default function TaskCard({ task, onUpdateStatus, onViewDetails, activity
           )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button 
             size="sm" 
             variant="outline" 
             onClick={() => onViewDetails?.(task.id)}
             data-testid={`button-view-details-${task.id}`}
+            className="w-full sm:w-auto min-h-[44px] sm:min-h-[36px]"
           >
             View Details
           </Button>
@@ -94,6 +100,7 @@ export default function TaskCard({ task, onUpdateStatus, onViewDetails, activity
                 onUpdateStatus?.(task.id, nextStatus);
               }}
               data-testid={`button-update-status-${task.id}`}
+              className="w-full sm:w-auto min-h-[44px] sm:min-h-[36px]"
             >
               {task.status === "not_started" ? "Start Task" : "Complete"}
             </Button>
